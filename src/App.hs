@@ -8,7 +8,7 @@
 module App where
 
 import           Control.Monad.Trans.Class    (lift)
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Either
 import           Data.Aeson
@@ -49,8 +49,7 @@ run = do
   let port = 3000
       settings =
         setPort port $
-        setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) $
-        defaultSettings
+        setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) defaultSettings
   runSettings settings =<< mkApp
 
 mkApp :: IO Application
@@ -70,11 +69,11 @@ server = lift app3
 appMain2 :: IO (Either ServantErr [Val])
 appMain2 = do
   manager <- liftIO $ newManager defaultManagerSettings
-  mapBoth (const err500) id <$> (runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 "")))
+  mapBoth (const err500) id <$> runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
 
 app3 :: IO [Val]
 app3 = appMain2 >>= \x -> case x of
-  Right x -> return $ x
+  Right x -> return x
   _ -> return $ fail ""
 
 --getItems :: Handler [Val]
