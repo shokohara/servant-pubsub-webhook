@@ -31,8 +31,12 @@ dependencies:
   - base
   - servant
   - servant-server
+  - servant-client
+  - either
+  - http-client
   - transformers
   - aeson
   - wai
   - warp
+  - transformers
 

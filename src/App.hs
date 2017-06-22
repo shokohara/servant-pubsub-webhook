@@ -1,5 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,17 +7,37 @@
 
 module App where
 
+import           Control.Monad.Trans.Class    (lift)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Either
 import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
+import Servant.Client
 import           Network.Wai.Handler.Warp
 import           Servant
 import           System.IO
+import Network.HTTP.Client hiding (Proxy)
+import Data.Either.Combinators
 
-type ItemApi =
-  "item" :> Get '[JSON] [Item] :<|>
-  "item" :> Capture "itemId" Integer :> Get '[JSON] Item
+data Val = Val { name :: String, value :: Int } deriving (Show, Generic, FromJSON, ToJSON)
+
+type MyApi = "list" :> Get '[JSON] [Val] -- GET /books
+
+myApi :: Proxy MyApi
+myApi = Proxy
+
+getAllBooks :: ClientM [Val]
+getAllBooks = client myApi
+
+appMain :: IO ()
+appMain = do
+  manager <- newManager defaultManagerSettings
+  res <- runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
+  case res of
+    Left err -> putStrLn $ "Error: " ++ show err
+    Right books -> print books
 
 itemApi :: Proxy ItemApi
 itemApi = Proxy
@@ -36,13 +56,29 @@ run = do
 mkApp :: IO Application
 mkApp = return $ serve itemApi server
 
-server :: Server ItemApi
-server =
-  getItems :<|>
-  getItemById
+type ItemApi = "item" :> Get '[JSON] [Val]
 
-getItems :: Handler [Item]
-getItems = return [exampleItem]
+api :: Proxy ItemApi
+api = Proxy
+
+server :: Server ItemApi
+server = lift app3
+--appMain2 :: EitherT ServantError IO [Val]
+--appMain2 = do
+--  manager <- liftIO $ newManager defaultManagerSettings
+--  EitherT $ runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
+appMain2 :: IO (Either ServantErr [Val])
+appMain2 = do
+  manager <- liftIO $ newManager defaultManagerSettings
+  mapBoth (const err500) id <$> (runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 "")))
+
+app3 :: IO [Val]
+app3 = appMain2 >>= \x -> case x of
+  Right x -> return $ x
+  _ -> return $ fail ""
+
+--getItems :: Handler [Val]
+--getItems = lift appMain2
 
 getItemById :: Integer -> Handler Item
 getItemById = \ case

@@ -32,5 +32,6 @@ import App
 --     threadDelay (1 * 1000000)
 
 main :: IO ()
-main = run
+--main = run
+main = App.appMain
 
