@@ -23,7 +23,7 @@ import Data.Either.Combinators
 
 data Val = Val { name :: String, value :: Int } deriving (Show, Generic, FromJSON, ToJSON)
 
-type MyApi = "list" :> Get '[JSON] [Val] -- GET /books
+type MyApi = "list" :> Get '[JSON] [Val]
 
 myApi :: Proxy MyApi
 myApi = Proxy
@@ -41,8 +41,6 @@ appMain = do
 
 itemApi :: Proxy ItemApi
 itemApi = Proxy
-
--- * app
 
 run :: IO ()
 run = do
@@ -62,10 +60,7 @@ api = Proxy
 
 server :: Server ItemApi
 server = lift app3
---appMain2 :: EitherT ServantError IO [Val]
---appMain2 = do
---  manager <- liftIO $ newManager defaultManagerSettings
---  EitherT $ runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
+
 appMain2 :: IO (Either ServantErr [Val])
 appMain2 = do
   manager <- liftIO $ newManager defaultManagerSettings
@@ -75,9 +70,6 @@ app3 :: IO [Val]
 app3 = appMain2 >>= \x -> case x of
   Right x -> return x
   _ -> return $ fail ""
-
---getItems :: Handler [Val]
---getItems = lift appMain2
 
 getItemById :: Integer -> Handler Item
 getItemById = \ case
