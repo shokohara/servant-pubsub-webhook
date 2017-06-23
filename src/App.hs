@@ -7,10 +7,13 @@
 
 module App where
 
+import qualified Option as O
+import Option (Option)
+import     Control.Monad
+import Data.Either.Combinators
 import           Control.Monad.Trans.Class    (lift)
 import Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Except
-import           Control.Monad.Trans.Either
 import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
@@ -19,16 +22,15 @@ import           Network.Wai.Handler.Warp
 import           Servant
 import           System.IO
 import Network.HTTP.Client hiding (Proxy)
-import Data.Either.Combinators
 
 data Val = Val { name :: String, value :: Int } deriving (Show, Generic, FromJSON, ToJSON)
 
-type MyApi = "list" :> Get '[JSON] [Val]
+type MyApi = "list" :> Get '[JSON] (Maybe Val)
 
 myApi :: Proxy MyApi
 myApi = Proxy
 
-getAllBooks :: ClientM [Val]
+getAllBooks :: ClientM (Maybe Val)
 getAllBooks = client myApi
 
 appMain :: IO ()
@@ -42,18 +44,17 @@ appMain = do
 itemApi :: Proxy ItemApi
 itemApi = Proxy
 
-run :: IO ()
-run = do
-  let port = 3000
-      settings =
-        setPort port $
-        setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) defaultSettings
+run :: Option -> IO ()
+run o = do
+  let settings =
+        setPort (O.port o) $
+          setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ (show $ O.port o))) defaultSettings
   runSettings settings =<< mkApp
 
 mkApp :: IO Application
 mkApp = return $ serve itemApi server
 
-type ItemApi = "item" :> Get '[JSON] [Val]
+type ItemApi = "item" :> Get '[JSON] (Maybe Val)
 
 api :: Proxy ItemApi
 api = Proxy
@@ -61,15 +62,13 @@ api = Proxy
 server :: Server ItemApi
 server = lift app3
 
-appMain2 :: IO (Either ServantErr [Val])
+appMain2 :: IO (Either ServantErr (Maybe Val))
 appMain2 = do
   manager <- liftIO $ newManager defaultManagerSettings
   mapBoth (const err500) id <$> runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
 
-app3 :: IO [Val]
-app3 = appMain2 >>= \x -> case x of
-  Right x -> return x
-  _ -> return $ fail ""
+app3 :: IO (Maybe Val)
+app3 = join . rightToMaybe <$> appMain2
 
 getItemById :: Integer -> Handler Item
 getItemById = \ case
