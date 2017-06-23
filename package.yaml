@@ -39,4 +39,5 @@ dependencies:
   - wai
   - warp
   - transformers
+  - wai-logger
 

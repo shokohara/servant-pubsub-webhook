@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -21,13 +20,13 @@ import           Network.Wai.Handler.Warp
 import           Servant
 import           System.IO
 import Network.HTTP.Client hiding (Proxy)
+import           Network.Wai.Logger       (withStdoutLogger)
 
 data Val = Val { name :: String, value :: Int } deriving (Show, Generic, FromJSON, ToJSON)
 
 type ClientApi = "api" :> Get '[JSON] (Maybe Val)
 
-type ServerApi = "api" :> Get '[JSON] (Maybe Val)
---type ServerApi = "api" :> QueryParam "ip" String :> Get '[JSON] (Maybe Val)
+type ServerApi = "api" :> Capture "ip" String :> Get '[JSON] (Maybe Val)
 
 clientApi :: Proxy ClientApi
 clientApi = Proxy
@@ -38,25 +37,25 @@ serverApi = Proxy
 getAllBooks :: ClientM (Maybe Val)
 getAllBooks = client clientApi
 
-appMain2 :: IO (Either ServantErr (Maybe Val))
-appMain2 = do
+appMain2 :: String -> IO (Either ServantErr (Maybe Val))
+appMain2 a = do
   manager <- liftIO $ newManager defaultManagerSettings
-  mapBoth (const err500) id <$> runClientM getAllBooks (ClientEnv manager (BaseUrl Http "google.com" 80 ""))
+  mapBoth (const err500) id <$> runClientM getAllBooks (ClientEnv manager (BaseUrl Http a 80 ""))
 
-app3 :: IO (Maybe Val)
-app3 = join . rightToMaybe <$> appMain2
+app3 :: String -> Handler (Maybe Val)
+app3 a = lift $ join . rightToMaybe <$> appMain2 a
 
 server :: Server ServerApi
-server = lift app3
+server = app3
 
 mkApp :: IO Application
 mkApp = return $ serve serverApi server
 
 run :: Option -> IO ()
-run o = do
+run o = withStdoutLogger $ \apilogger -> do
   let settings =
         setPort (O.port o) $
-          setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ (show $ O.port o))) defaultSettings
+          setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show (O.port o))) $
+            setLogger apilogger defaultSettings
   runSettings settings =<< mkApp
-
 
