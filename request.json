@@ -1,0 +1,12 @@
+{
+ "message": {
+  "attributes": {
+   "string-value": "string-value"
+  },
+  "data": "base64-no-line-feeds-variant-representation-of-payload",
+  "message_id": "string-value",
+  "publish_time": "string-value"
+ },
+ "subscription": "string-value"
+}
+

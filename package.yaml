@@ -1,19 +1,11 @@
-name: traceinstances
+name: servant-pubsub-webhook
 ghc-options:
     - -Wall
 library:
+  exposed-modules:
+    Servant.PubSub.Webhook
   source-dirs:
     - src
-executables:
-  traceinstances:
-    main: app/Main.hs
-    ghc-options:
-      - -threaded
-      - -rtsopts
-      - -with-rtsopts=-N
-    dependencies:
-      - traceinstances
-      - optparse-applicative
 tests:
   spec:
     main: Spec.hs
@@ -22,20 +14,25 @@ tests:
     ghc-options:
     dependencies:
       - hspec
-      - traceinstances
+      - servant-pubsub-webhook
+      - here
       - servant-client
       - warp >= 3.2.4
       - http-client
       - http-types
+      - bytestring
+      - unordered-containers
 dependencies:
   - base
   - servant
   - servant-server
   - servant-client
   - either
+  - text
   - http-client
   - transformers
   - aeson
+  - aeson-casing
   - wai
   - warp
   - transformers
