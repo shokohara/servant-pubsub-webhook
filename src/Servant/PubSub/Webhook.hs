@@ -12,14 +12,14 @@ import Data.Aeson
 import Data.Aeson.Casing
 
 data Message = Message { messageAttributes :: Object, messageData :: Text, messageMessageId :: Text, messagePublishTime :: Text } deriving (Show, Eq, Generic)
-data Val = Val { valMessage :: Message, valSubscription :: Text } deriving (Show, Eq, Generic)
+data PubSubRequest = PubSubRequest { psrMessage :: Message, psrSubscription :: Text } deriving (Show, Eq, Generic)
 
 instance ToJSON Message where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 instance FromJSON Message where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
-instance ToJSON Val where
+instance ToJSON PubSubRequest where
   toJSON = genericToJSON $ aesonPrefix snakeCase
-instance FromJSON Val where
+instance FromJSON PubSubRequest where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 

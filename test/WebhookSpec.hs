@@ -13,5 +13,5 @@ spec :: Spec
 spec = do
   describe "json" $ do
     it "request.json" $ do
-      (decode $ C.pack [hereFile|request.json|]) `shouldBe` Just Val {valMessage = Message {messageAttributes = H.fromList [("string-value",String "string-value")], messageData = "base64-no-line-feeds-variant-representation-of-payload", messageMessageId = "string-value", messagePublishTime = "string-value"}, valSubscription = "string-value"}
+      (decode $ C.pack [hereFile|request.json|]) `shouldBe` Just PubSubRequest { psrMessage = Message {messageAttributes = H.fromList [("string-value",String "string-value")], messageData = "base64-no-line-feeds-variant-representation-of-payload", messageMessageId = "string-value", messagePublishTime = "string-value"}, psrSubscription = "string-value"}
 
